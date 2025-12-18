@@ -180,40 +180,60 @@ export default function BpmnModelerComponent({ initialXml, onSave }: BpmnModeler
       )}
 
       {/* Toolbar */}
-      <div className="flex items-center gap-2 mb-4 p-3 bg-[#f5f6fa] rounded-lg z-10">
-        <button 
-          onClick={handleZoomIn} 
-          disabled={isLoading || !!error || !modelerRef.current}
-          className="px-3 py-1.5 text-sm font-medium text-[#646c98] hover:text-[#1a1a1a] hover:bg-white rounded transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-          title="Zoom In"
-        >
-          🔍+
-        </button>
-        <button 
-          onClick={handleZoomOut} 
-          disabled={isLoading || !!error || !modelerRef.current}
-          className="px-3 py-1.5 text-sm font-medium text-[#646c98] hover:text-[#1a1a1a] hover:bg-white rounded transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-          title="Zoom Out"
-        >
-          🔍-
-        </button>
-        <button 
-          onClick={handleZoomReset} 
-          disabled={isLoading || !!error || !modelerRef.current}
-          className="px-3 py-1.5 text-sm font-medium text-[#646c98] hover:text-[#1a1a1a] hover:bg-white rounded transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-          title="Ajustar à tela"
-        >
-          ⊡ Ajustar
-        </button>
-        <div className="flex-1" />
-        {hasChanges && !isLoading && !error && (
+      <div className="mb-4 space-y-2">
+        {/* Header com botão de salvar em destaque */}
+        <div className="flex items-center justify-between p-4 bg-gradient-to-r from-blue-50 to-purple-50 border-2 border-blue-200 rounded-lg">
+          <div className="flex items-center gap-3">
+            <span className="text-3xl">📝</span>
+            <div>
+              <h3 className="text-lg font-bold text-[#1a1a1a]">Editor de Diagrama BPMN</h3>
+              <p className="text-xs text-[#646c98]">
+                {hasChanges ? '⚠️ Você tem alterações não salvas' : 'Edite o diagrama e clique em Salvar'}
+              </p>
+            </div>
+          </div>
           <button 
-            onClick={handleSave} 
-            className="px-4 py-1.5 bg-[#2c19b2] text-white rounded text-sm font-medium hover:bg-[#230fb8] transition-colors"
+            onClick={handleSave}
+            disabled={!hasChanges || isLoading || !!error || !modelerRef.current}
+            className={`px-6 py-3 rounded-lg text-base font-bold transition-all transform hover:scale-105 shadow-lg ${
+              hasChanges && !isLoading && !error && modelerRef.current
+                ? 'bg-gradient-to-r from-green-500 to-green-600 text-white hover:from-green-600 hover:to-green-700 cursor-pointer animate-pulse'
+                : 'bg-gray-300 text-gray-500 cursor-not-allowed'
+            }`}
+            title={hasChanges ? 'Clique para salvar TUDO (nome + descrição + diagrama)' : 'Faça alterações no diagrama para habilitar'}
           >
-            💾 Salvar Alterações
+            💾 {hasChanges ? 'SALVAR AGORA' : 'Salvar Diagrama'}
           </button>
-        )}
+        </div>
+
+        {/* Ferramentas de zoom */}
+        <div className="flex items-center gap-2 p-3 bg-[#f5f6fa] rounded-lg">
+          <span className="text-xs font-medium text-[#646c98] mr-2">Ferramentas:</span>
+          <button 
+            onClick={handleZoomIn} 
+            disabled={isLoading || !!error || !modelerRef.current}
+            className="px-3 py-1.5 text-sm font-medium text-[#646c98] hover:text-[#1a1a1a] hover:bg-white rounded transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+            title="Zoom In"
+          >
+            🔍+
+          </button>
+          <button 
+            onClick={handleZoomOut} 
+            disabled={isLoading || !!error || !modelerRef.current}
+            className="px-3 py-1.5 text-sm font-medium text-[#646c98] hover:text-[#1a1a1a] hover:bg-white rounded transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+            title="Zoom Out"
+          >
+            🔍-
+          </button>
+          <button 
+            onClick={handleZoomReset} 
+            disabled={isLoading || !!error || !modelerRef.current}
+            className="px-3 py-1.5 text-sm font-medium text-[#646c98] hover:text-[#1a1a1a] hover:bg-white rounded transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+            title="Ajustar à tela"
+          >
+            ⊡ Ajustar
+          </button>
+        </div>
       </div>
 
       {/* Canvas */}

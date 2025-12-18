@@ -171,7 +171,7 @@ export default function EditProcessPage() {
           </div>
           {hasMetadataChanges && (
             <div className="flex items-center gap-2 px-3 py-1.5 bg-amber-50 border border-amber-200 rounded-lg">
-              <span className="text-xs font-medium text-amber-700">⚠️ Alterações não salvas</span>
+              <span className="text-xs font-medium text-amber-700">⚠️ Nome/Descrição alterados</span>
             </div>
           )}
         </div>
@@ -190,8 +190,12 @@ export default function EditProcessPage() {
       <div className="bg-white rounded-xl shadow-sm border border-[#e8eaf2] p-6 mb-4">
         <div className="flex items-center justify-between mb-4">
           <h2 className="text-lg font-semibold text-[#1a1a1a]">Informações do Processo</h2>
-          <div className="text-xs text-[#646c98] bg-blue-50 px-3 py-1.5 rounded-md border border-blue-200">
-            💡 Para salvar, use o botão "💾 Salvar Alterações" no editor BPMN abaixo
+          <div className="flex items-center gap-2 px-4 py-2 bg-blue-50 border-2 border-blue-300 rounded-lg">
+            <span className="text-2xl">👇</span>
+            <div className="flex flex-col">
+              <span className="text-xs font-bold text-blue-900">O botão "💾 Salvar" está no editor BPMN abaixo</span>
+              <span className="text-xs text-blue-700">Ele salva nome, descrição e diagrama juntos</span>
+            </div>
           </div>
         </div>
         <div className="grid grid-cols-2 gap-4">
