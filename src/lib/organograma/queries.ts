@@ -161,6 +161,8 @@ export async function upsertNodes(
           person_name: root.person_name,
           role: root.role,
           sort_order: root.sort_order,
+          position_x: root.position_x ?? null,
+          position_y: root.position_y ?? null,
         })
         .select()
         .single();
@@ -207,6 +209,8 @@ export async function upsertNodes(
             person_name: node.person_name,
             role: node.role,
             sort_order: node.sort_order,
+            position_x: node.position_x ?? null,
+            position_y: node.position_y ?? null,
           })
           .select()
           .single();

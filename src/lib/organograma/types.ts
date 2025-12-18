@@ -13,6 +13,8 @@ export type OrgChartNode = {
   person_name: string;
   role: string;
   sort_order: number;
+  position_x?: number | null;
+  position_y?: number | null;
   created_at: string;
   updated_at: string;
 };
@@ -45,6 +47,8 @@ export type UpsertNodePayload = {
   person_name: string;
   role: string;
   sort_order: number;
+  position_x?: number | null;
+  position_y?: number | null;
 };
 
 

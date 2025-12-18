@@ -62,12 +62,21 @@ export async function createPlanningDocument(name: string, description?: string)
       })
       .select()
       .single();
-    if (error) throw error;
+    if (error) {
+      console.error('Erro Supabase ao criar planejamento:', error);
+      throw new Error(`Erro ao criar planejamento: ${error.message || 'Erro desconhecido'}`);
+    }
+    if (!data) {
+      throw new Error('Planejamento não foi criado');
+    }
     revalidatePath('/planejamento');
     return data;
   } catch (error: any) {
     console.error('Erro ao criar planejamento:', error);
-    throw new Error(`Erro ao criar planejamento: ${error.message}`);
+    if (error instanceof Error) {
+      throw error;
+    }
+    throw new Error(`Erro ao criar planejamento: ${error.message || 'Erro desconhecido'}`);
   }
 }
 

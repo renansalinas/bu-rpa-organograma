@@ -59,6 +59,8 @@ export default function EditarOrganogramaPage() {
         person_name: node.person_name,
         role: node.role,
         sort_order: node.sort_order,
+        position_x: node.position_x ?? null,
+        position_y: node.position_y ?? null,
       }));
 
       await saveChart(chartId, name, description, nodesToSave);

@@ -169,6 +169,7 @@ export default function EditProcessPage() {
       {/* Editor BPMN */}
       <div className="flex-1 min-h-0 bg-white rounded-xl shadow-sm border border-[#e8eaf2] p-6 overflow-hidden">
         <BpmnModelerComponent
+          key={bpmnXml} // Force re-render when XML changes
           initialXml={bpmnXml}
           onSave={handleSaveBpmn}
         />

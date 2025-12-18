@@ -122,7 +122,37 @@ export function OrgChartEditor({ initialNodes, onNodesChange }: OrgChartEditorPr
   }, []);
 
   const handleReorganize = useCallback(() => {
-    zoomControlsRef.current?.reorganize();
+    // Limpar posições salvas para forçar recálculo do layout
+    setNodes((prev) =>
+      prev.map((node) => ({
+        ...node,
+        position_x: null,
+        position_y: null,
+      }))
+    );
+    // Reorganizar após um pequeno delay para garantir que o estado foi atualizado
+    setTimeout(() => {
+      zoomControlsRef.current?.reorganize();
+    }, 50);
+  }, []);
+
+  // Handler para mudanças de posição dos nós
+  const handleNodePositionsChange = useCallback((positions: Map<string, { x: number; y: number }>) => {
+    requestAnimationFrame(() => {
+      setNodes((prev) =>
+        prev.map((node) => {
+          const position = positions.get(node.id);
+          if (position) {
+            return {
+              ...node,
+              position_x: position.x,
+              position_y: position.y,
+            };
+          }
+          return node;
+        })
+      );
+    });
   }, []);
 
   const handleZoomIn = useCallback(() => {
@@ -178,6 +208,7 @@ export function OrgChartEditor({ initialNodes, onNodesChange }: OrgChartEditorPr
               nodes={nodes}
               selectedNodeId={selectedNodeId}
               onNodeClick={handleNodeClick}
+              onNodePositionsChange={handleNodePositionsChange}
               onAddSubordinate={handleAddSubordinate}
               onAddPeer={handleAddPeer}
               onDeleteNode={handleDeleteNode}
