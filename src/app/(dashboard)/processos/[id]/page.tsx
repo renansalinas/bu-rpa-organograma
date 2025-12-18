@@ -19,6 +19,7 @@ export default function EditProcessPage() {
   const [bpmnXml, setBpmnXml] = useState('');
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
+  const [hasMetadataChanges, setHasMetadataChanges] = useState(false);
 
   useEffect(() => {
     async function load() {
@@ -43,16 +44,27 @@ export default function EditProcessPage() {
     load();
   }, [processId, router]);
 
+  // Detectar mudanças nos metadados
+  useEffect(() => {
+    if (process) {
+      const nameChanged = name !== process.name;
+      const descChanged = (description || '') !== (process.description || '');
+      setHasMetadataChanges(nameChanged || descChanged);
+    }
+  }, [name, description, process]);
+
   const handleSaveBpmn = async (xml: string) => {
     if (!processId || !name.trim()) {
-      alert('Nome do processo é obrigatório');
+      alert('❌ Nome do processo é obrigatório! Por favor, preencha o nome antes de salvar.');
       return;
     }
 
     setSaving(true);
     try {
-      console.log('🔄 Iniciando salvamento do BPMN...', {
+      console.log('🔄 [CLIENT] Iniciando salvamento completo do processo...', {
         processId,
+        name: name.trim(),
+        descriptionLength: description.length,
         xmlLength: xml.length,
         timestamp: new Date().toISOString()
       });
@@ -94,9 +106,12 @@ export default function EditProcessPage() {
       setName(updated.name);
       setDescription(updated.description || '');
       setBpmnXml(updated.bpmn_xml);
+      setHasMetadataChanges(false);
 
       // Feedback visual de sucesso
-      alert('✅ Diagrama BPMN salvo e verificado com sucesso!');
+      alert('✅ Processo salvo e verificado com sucesso!\n\n📄 Nome: ' + updated.name + '\n📊 Diagrama BPMN: Atualizado');
+      
+      console.log('✅ [CLIENT] Salvamento completo finalizado com sucesso');
       
       // Revalidar apenas o necessário sem reload completo
       router.refresh();
@@ -110,29 +125,6 @@ export default function EditProcessPage() {
     }
   };
 
-  const handleSaveMetadata = async () => {
-    if (!processId || !name.trim()) {
-      alert('Nome do processo é obrigatório');
-      return;
-    }
-
-    setSaving(true);
-    try {
-      await updateProcess({
-        id: processId,
-        name: name.trim(),
-        description: description.trim() || undefined,
-        bpmn_xml: bpmnXml
-      });
-      router.refresh();
-      alert('Metadados salvos com sucesso!');
-    } catch (error: any) {
-      console.error('Erro ao salvar processo:', error);
-      alert(`Erro ao salvar processo: ${error.message || 'Erro desconhecido'}`);
-    } finally {
-      setSaving(false);
-    }
-  };
 
   if (loading) {
     return (
@@ -156,22 +148,32 @@ export default function EditProcessPage() {
       {/* Loading Overlay durante salvamento */}
       {saving && (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-          <div className="bg-white rounded-lg p-6 shadow-xl flex flex-col items-center gap-4">
-            <div className="w-12 h-12 border-4 border-[#2c19b2] border-t-transparent rounded-full animate-spin"></div>
-            <div className="text-lg font-medium text-[#1a1a1a]">Salvando diagrama BPMN...</div>
-            <div className="text-sm text-[#646c98]">Aguarde enquanto verificamos a persistência dos dados</div>
+          <div className="bg-white rounded-lg p-8 shadow-2xl flex flex-col items-center gap-4 max-w-md">
+            <div className="w-16 h-16 border-4 border-[#2c19b2] border-t-transparent rounded-full animate-spin"></div>
+            <div className="text-xl font-bold text-[#1a1a1a]">💾 Salvando Processo</div>
+            <div className="text-sm text-[#646c98] text-center">
+              Salvando nome, descrição e diagrama BPMN...<br/>
+              Aguarde enquanto verificamos a persistência no banco de dados
+            </div>
           </div>
         </div>
       )}
 
       {/* Header */}
       <div className="flex justify-between items-center mb-4">
-        <div className="flex items-center gap-2 text-sm text-[#646c98]">
-          <Link href="/processos" className="hover:text-[#1a1a1a] transition-colors">
-            Processos
-          </Link>
-          <span>/</span>
-          <span className="text-[#1a1a1a]">{name || 'Carregando...'}</span>
+        <div className="flex items-center gap-3">
+          <div className="flex items-center gap-2 text-sm text-[#646c98]">
+            <Link href="/processos" className="hover:text-[#1a1a1a] transition-colors">
+              Processos
+            </Link>
+            <span>/</span>
+            <span className="text-[#1a1a1a]">{name || 'Carregando...'}</span>
+          </div>
+          {hasMetadataChanges && (
+            <div className="flex items-center gap-2 px-3 py-1.5 bg-amber-50 border border-amber-200 rounded-lg">
+              <span className="text-xs font-medium text-amber-700">⚠️ Alterações não salvas</span>
+            </div>
+          )}
         </div>
         <div className="flex gap-3">
           <Link
@@ -179,21 +181,19 @@ export default function EditProcessPage() {
             className="flex items-center gap-2 px-4 py-2 text-sm font-medium text-[#646c98] hover:text-[#1a1a1a] transition-colors"
           >
             <X className="w-4 h-4" />
-            Cancelar
+            Voltar
           </Link>
-          <button 
-            onClick={handleSaveMetadata} 
-            className="flex items-center gap-2 px-4 py-2 bg-[#2c19b2] text-white rounded-lg text-sm font-medium hover:bg-[#230fb8] transition-colors" 
-            disabled={saving}
-          >
-            <Save className="w-4 h-4" />
-            {saving ? 'Salvando...' : 'Salvar'}
-          </button>
         </div>
       </div>
 
       {/* Metadados */}
       <div className="bg-white rounded-xl shadow-sm border border-[#e8eaf2] p-6 mb-4">
+        <div className="flex items-center justify-between mb-4">
+          <h2 className="text-lg font-semibold text-[#1a1a1a]">Informações do Processo</h2>
+          <div className="text-xs text-[#646c98] bg-blue-50 px-3 py-1.5 rounded-md border border-blue-200">
+            💡 Para salvar, use o botão "💾 Salvar Alterações" no editor BPMN abaixo
+          </div>
+        </div>
         <div className="grid grid-cols-2 gap-4">
           <div>
             <label className="block text-sm font-medium text-[#1a1a1a] mb-2">
