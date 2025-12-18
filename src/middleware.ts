@@ -48,10 +48,15 @@ export async function middleware(req: NextRequest) {
     data: { session },
   } = await supabase.auth.getSession();
 
-  // Rotas públicas
-  if (req.nextUrl.pathname === '/login') {
-    // Se já está logado, redireciona para dashboard
-    if (session) {
+  // Rotas públicas (não requerem autenticação)
+  const publicRoutes = ['/login', '/esqueci-senha', '/reset-senha'];
+  const isPublicRoute = publicRoutes.some(route => 
+    req.nextUrl.pathname === route || req.nextUrl.pathname.startsWith('/reset-senha/')
+  );
+
+  if (isPublicRoute) {
+    // Se já está logado e está tentando acessar login/esqueci-senha, redireciona
+    if (session && (req.nextUrl.pathname === '/login' || req.nextUrl.pathname === '/esqueci-senha')) {
       return NextResponse.redirect(new URL('/organograma', req.url));
     }
     return response;

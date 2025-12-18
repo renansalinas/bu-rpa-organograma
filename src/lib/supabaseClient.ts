@@ -1,14 +1,24 @@
-import { createClient } from "@supabase/supabase-js";
+import { createBrowserClient } from '@supabase/ssr';
+import { createClient as createSupabaseClient } from '@supabase/supabase-js';
 
 const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL || "https://uxgnxnaxkymfcfjrfbpq.supabase.co";
 const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || "sb_publishable_L1Gn0Sx37T46LiwPWs8YeA_8oABnrUV";
-const supabaseServiceKey = process.env.SUPABASE_SERVICE_KEY || supabaseAnonKey;
+// Service Role Key - deve ser configurada no .env.local
+const supabaseServiceKey = process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.SUPABASE_SERVICE_KEY || supabaseAnonKey;
 
-// Cliente para uso no cliente (browser)
-export const supabase = createClient(supabaseUrl, supabaseAnonKey);
+// Função para criar cliente (browser/client-side)
+export function createClient() {
+  return createBrowserClient(
+    supabaseUrl,
+    supabaseAnonKey
+  );
+}
 
-// Cliente para uso no servidor (com service key para operações privilegiadas)
-export const supabaseAdmin = createClient(supabaseUrl, supabaseServiceKey, {
+// Cliente singleton (para manter compatibilidade)
+export const supabase = createClient();
+
+// Cliente admin para uso no servidor (com service key para operações privilegiadas)
+export const supabaseAdmin = createSupabaseClient(supabaseUrl, supabaseServiceKey, {
   auth: {
     autoRefreshToken: false,
     persistSession: false,
