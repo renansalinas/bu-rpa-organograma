@@ -20,8 +20,9 @@ import OrgChartNode from './OrgChartNode';
 import type { OrgChartNode as OrgChartNodeType, RFNodeData } from '@/lib/organograma/types';
 
 const nodeTypes: NodeTypes = {
-  orgNode: OrgChartNode,
+  orgNode: OrgChartNode as any,
 };
+
 
 interface OrgChartCanvasProps {
   nodes: OrgChartNodeType[];
