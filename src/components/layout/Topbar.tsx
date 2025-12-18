@@ -18,31 +18,46 @@ export function Topbar({ title }: TopbarProps) {
     
     setIsLoggingOut(true);
     
+    // Timeout de segurança: SEMPRE redireciona após 2 segundos
+    const safetyTimeout = setTimeout(() => {
+      console.log('⏰ Timeout de segurança ativado - redirecionando...');
+      window.location.href = '/login';
+    }, 2000);
+    
     try {
       console.log('🔓 Iniciando logout...');
-      const supabase = createClient();
       
-      // Fazer logout no Supabase
-      const { error } = await supabase.auth.signOut();
-      
-      if (error) {
-        console.error('Erro ao fazer logout:', error);
-      } else {
-        console.log('✅ Logout realizado com sucesso');
-      }
-      
-      // Limpar localStorage (se houver dados salvos)
-      if (typeof window !== 'undefined') {
+      // Limpar storage IMEDIATAMENTE
+      try {
         localStorage.clear();
         sessionStorage.clear();
+        console.log('✅ Storage limpo');
+      } catch (e) {
+        console.warn('⚠️ Erro ao limpar storage:', e);
       }
       
-      // Força recarregar a página na rota de login
+      // Tentar fazer logout no Supabase (não bloqueia se falhar)
+      try {
+        const supabase = createClient();
+        await Promise.race([
+          supabase.auth.signOut(),
+          new Promise((_, reject) => setTimeout(() => reject('timeout'), 1000))
+        ]);
+        console.log('✅ Logout Supabase OK');
+      } catch (e) {
+        console.warn('⚠️ Erro/timeout no signOut:', e);
+      }
+      
+      // Limpar timeout de segurança
+      clearTimeout(safetyTimeout);
+      
+      // Redirecionar IMEDIATAMENTE
+      console.log('🔄 Redirecionando para login...');
       window.location.href = '/login';
       
     } catch (error) {
-      console.error('❌ Erro ao fazer logout:', error);
-      // Mesmo com erro, redireciona para login
+      console.error('❌ Erro crítico:', error);
+      clearTimeout(safetyTimeout);
       window.location.href = '/login';
     }
   };
