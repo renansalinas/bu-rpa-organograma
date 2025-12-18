@@ -1,16 +1,22 @@
 'use client';
 
-import { useEffect, useRef, useState, useCallback } from 'react';
+import { useEffect, useRef, useState, useCallback, useImperativeHandle, forwardRef } from 'react';
 import type BpmnModelerType from 'bpmn-js/lib/Modeler';
 import 'bpmn-js/dist/assets/diagram-js.css';
 import 'bpmn-js/dist/assets/bpmn-font/css/bpmn.css';
 
 interface BpmnModelerComponentProps {
   initialXml: string;
-  onSave: (xml: string) => void;
+  onSave?: (xml: string) => void;
 }
 
-export default function BpmnModelerComponent({ initialXml, onSave }: BpmnModelerComponentProps) {
+export interface BpmnModelerRef {
+  getCurrentXml: () => Promise<string | null>;
+  hasUnsavedChanges: () => boolean;
+}
+
+const BpmnModelerComponent = forwardRef<BpmnModelerRef, BpmnModelerComponentProps>(
+  function BpmnModelerComponent({ initialXml, onSave }, ref) {
   const containerRef = useRef<HTMLDivElement>(null);
   const modelerRef = useRef<BpmnModelerType | null>(null);
   const [hasChanges, setHasChanges] = useState(false);
@@ -19,6 +25,24 @@ export default function BpmnModelerComponent({ initialXml, onSave }: BpmnModeler
   const initializedRef = useRef(false);
   const retryCountRef = useRef(0);
   const MAX_RETRIES = 10;
+
+  // Expor métodos para o componente pai
+  useImperativeHandle(ref, () => ({
+    getCurrentXml: async () => {
+      if (!modelerRef.current) {
+        console.error('Modeler não está inicializado');
+        return null;
+      }
+      try {
+        const { xml } = await modelerRef.current.saveXML({ format: true });
+        return xml || null;
+      } catch (error) {
+        console.error('Erro ao exportar XML:', error);
+        return null;
+      }
+    },
+    hasUnsavedChanges: () => hasChanges
+  }));
 
   const initModeler = useCallback(async () => {
     if (!containerRef.current) {
@@ -113,35 +137,6 @@ export default function BpmnModelerComponent({ initialXml, onSave }: BpmnModeler
     };
   }, [initialXml, initModeler]);
 
-  const handleSave = async () => {
-    if (!modelerRef.current) {
-      console.error('❌ Modeler não está inicializado');
-      return;
-    }
-
-    try {
-      console.log('💾 Exportando XML do BPMN...');
-      const { xml } = await modelerRef.current.saveXML({ format: true });
-      
-      if (xml) {
-        console.log('✅ XML exportado com sucesso:', {
-          length: xml.length,
-          preview: xml.substring(0, 200)
-        });
-        
-        await onSave(xml);
-        setHasChanges(false);
-        console.log('✅ Callback onSave executado com sucesso');
-      } else {
-        console.error('❌ XML vazio retornado do modeler');
-        alert('Erro: Não foi possível exportar o diagrama BPMN');
-      }
-    } catch (err) {
-      console.error('❌ Erro ao salvar BPMN:', err);
-      alert('Erro ao salvar diagrama BPMN: ' + (err as Error).message);
-    }
-  };
-
   const handleZoomIn = () => {
     (modelerRef.current?.get('zoomScroll') as any)?.stepZoom(1);
   };
@@ -179,61 +174,37 @@ export default function BpmnModelerComponent({ initialXml, onSave }: BpmnModeler
         </div>
       )}
 
-      {/* Toolbar */}
-      <div className="mb-4 space-y-2">
-        {/* Header com botão de salvar em destaque */}
-        <div className="flex items-center justify-between p-4 bg-gradient-to-r from-blue-50 to-purple-50 border-2 border-blue-200 rounded-lg">
-          <div className="flex items-center gap-3">
-            <span className="text-3xl">📝</span>
-            <div>
-              <h3 className="text-lg font-bold text-[#1a1a1a]">Editor de Diagrama BPMN</h3>
-              <p className="text-xs text-[#646c98]">
-                {hasChanges ? '⚠️ Você tem alterações não salvas' : 'Edite o diagrama e clique em Salvar'}
-              </p>
-            </div>
+      {/* Toolbar simples */}
+      <div className="flex items-center gap-2 mb-4 p-3 bg-[#f5f6fa] rounded-lg">
+        <button 
+          onClick={handleZoomIn} 
+          disabled={isLoading || !!error || !modelerRef.current}
+          className="px-3 py-1.5 text-sm font-medium text-[#646c98] hover:text-[#1a1a1a] hover:bg-white rounded transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+          title="Zoom In"
+        >
+          🔍+
+        </button>
+        <button 
+          onClick={handleZoomOut} 
+          disabled={isLoading || !!error || !modelerRef.current}
+          className="px-3 py-1.5 text-sm font-medium text-[#646c98] hover:text-[#1a1a1a] hover:bg-white rounded transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+          title="Zoom Out"
+        >
+          🔍-
+        </button>
+        <button 
+          onClick={handleZoomReset} 
+          disabled={isLoading || !!error || !modelerRef.current}
+          className="px-3 py-1.5 text-sm font-medium text-[#646c98] hover:text-[#1a1a1a] hover:bg-white rounded transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+          title="Ajustar à tela"
+        >
+          ⊡ Ajustar
+        </button>
+        {hasChanges && (
+          <div className="ml-auto flex items-center gap-2 px-3 py-1.5 bg-amber-50 border border-amber-200 rounded">
+            <span className="text-xs font-medium text-amber-700">⚠️ Alterações não salvas</span>
           </div>
-          <button 
-            onClick={handleSave}
-            disabled={!hasChanges || isLoading || !!error || !modelerRef.current}
-            className={`px-6 py-3 rounded-lg text-base font-bold transition-all transform hover:scale-105 shadow-lg ${
-              hasChanges && !isLoading && !error && modelerRef.current
-                ? 'bg-gradient-to-r from-green-500 to-green-600 text-white hover:from-green-600 hover:to-green-700 cursor-pointer animate-pulse'
-                : 'bg-gray-300 text-gray-500 cursor-not-allowed'
-            }`}
-            title={hasChanges ? 'Clique para salvar TUDO (nome + descrição + diagrama)' : 'Faça alterações no diagrama para habilitar'}
-          >
-            💾 {hasChanges ? 'SALVAR AGORA' : 'Salvar Diagrama'}
-          </button>
-        </div>
-
-        {/* Ferramentas de zoom */}
-        <div className="flex items-center gap-2 p-3 bg-[#f5f6fa] rounded-lg">
-          <span className="text-xs font-medium text-[#646c98] mr-2">Ferramentas:</span>
-          <button 
-            onClick={handleZoomIn} 
-            disabled={isLoading || !!error || !modelerRef.current}
-            className="px-3 py-1.5 text-sm font-medium text-[#646c98] hover:text-[#1a1a1a] hover:bg-white rounded transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-            title="Zoom In"
-          >
-            🔍+
-          </button>
-          <button 
-            onClick={handleZoomOut} 
-            disabled={isLoading || !!error || !modelerRef.current}
-            className="px-3 py-1.5 text-sm font-medium text-[#646c98] hover:text-[#1a1a1a] hover:bg-white rounded transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-            title="Zoom Out"
-          >
-            🔍-
-          </button>
-          <button 
-            onClick={handleZoomReset} 
-            disabled={isLoading || !!error || !modelerRef.current}
-            className="px-3 py-1.5 text-sm font-medium text-[#646c98] hover:text-[#1a1a1a] hover:bg-white rounded transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-            title="Ajustar à tela"
-          >
-            ⊡ Ajustar
-          </button>
-        </div>
+        )}
       </div>
 
       {/* Canvas */}
@@ -244,5 +215,7 @@ export default function BpmnModelerComponent({ initialXml, onSave }: BpmnModeler
       />
     </div>
   );
-}
+});
+
+export default BpmnModelerComponent;
 
