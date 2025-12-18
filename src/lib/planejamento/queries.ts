@@ -6,7 +6,13 @@ import type { PlanningDocument, PlanningLine, PlanningDocumentWithLines, SavePla
 
 async function ensureAuth() {
   try {
-    await authServiceUser();
+    // Verificar se temos service key configurada
+    if (!process.env.SUPABASE_SERVICE_ROLE_KEY && !process.env.SUPABASE_SERVICE_KEY) {
+      console.warn('⚠️ SUPABASE_SERVICE_ROLE_KEY não configurada!');
+      // Continuar mesmo sem auth para não quebrar em desenvolvimento
+    } else {
+      await authServiceUser();
+    }
   } catch (error) {
     console.warn('Erro na autenticação (continuando):', error);
   }
@@ -54,21 +60,33 @@ export async function getPlanningDocumentWithLines(documentId: string): Promise<
 export async function createPlanningDocument(name: string, description?: string): Promise<PlanningDocument> {
   try {
     await ensureAuth();
+    
+    const insertData = {
+      name: name.trim(),
+      description: description?.trim() || null,
+    };
+    
+    console.log('Criando planejamento com dados:', insertData);
+    
     const { data, error } = await supabaseAdmin
       .from('planning_documents')
-      .insert({
-        name: name.trim(),
-        description: description?.trim() || null,
-      })
+      .insert(insertData)
       .select()
       .single();
+      
     if (error) {
       console.error('Erro Supabase ao criar planejamento:', error);
+      console.error('Código do erro:', error.code);
+      console.error('Detalhes:', error.details);
+      console.error('Hint:', error.hint);
       throw new Error(`Erro ao criar planejamento: ${error.message || 'Erro desconhecido'}`);
     }
+    
     if (!data) {
-      throw new Error('Planejamento não foi criado');
+      throw new Error('Planejamento não foi criado - nenhum dado retornado');
     }
+    
+    console.log('Planejamento criado com sucesso:', data.id);
     revalidatePath('/planejamento');
     return data;
   } catch (error: any) {

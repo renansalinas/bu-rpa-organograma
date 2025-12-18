@@ -79,21 +79,33 @@ export async function updateProcess(payload: UpdateProcessPayload): Promise<Proc
   try {
     await ensureAuth();
     
+    const updateData = {
+      name: payload.name.trim(),
+      description: payload.description?.trim() || null,
+      bpmn_xml: payload.bpmn_xml,
+      thumbnail: payload.thumbnail || null,
+      updated_at: new Date().toISOString()
+    };
+    
+    console.log('Atualizando processo:', payload.id, 'XML length:', payload.bpmn_xml.length);
+    
     const { data, error } = await supabaseAdmin
       .from('processes')
-      .update({
-        name: payload.name.trim(),
-        description: payload.description?.trim() || null,
-        bpmn_xml: payload.bpmn_xml,
-        thumbnail: payload.thumbnail || null,
-        updated_at: new Date().toISOString()
-      })
+      .update(updateData)
       .eq('id', payload.id)
       .select()
       .single();
     
-    if (error) throw error;
+    if (error) {
+      console.error('Erro Supabase ao atualizar processo:', error);
+      throw error;
+    }
     
+    if (!data) {
+      throw new Error('Processo não foi atualizado - nenhum dado retornado');
+    }
+    
+    console.log('Processo atualizado com sucesso:', data.id);
     revalidatePath(`/processos/${payload.id}`);
     revalidatePath('/processos');
     return data;

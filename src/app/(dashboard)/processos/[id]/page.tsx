@@ -51,19 +51,20 @@ export default function EditProcessPage() {
 
     setSaving(true);
     try {
-      await updateProcess({
+      const updated = await updateProcess({
         id: processId,
         name: name.trim(),
         description: description.trim() || undefined,
         bpmn_xml: xml
       });
-      setBpmnXml(xml);
-      router.refresh();
-      alert('Processo salvo com sucesso!');
+      // Atualizar estado com o XML retornado do servidor
+      setBpmnXml(updated.bpmn_xml);
+      setProcess(updated);
+      // Forçar reload da página para garantir que o BPMN recarregue
+      window.location.reload();
     } catch (error: any) {
       console.error('Erro ao salvar processo:', error);
       alert(`Erro ao salvar processo: ${error.message || 'Erro desconhecido'}`);
-    } finally {
       setSaving(false);
     }
   };
@@ -168,11 +169,13 @@ export default function EditProcessPage() {
 
       {/* Editor BPMN */}
       <div className="flex-1 min-h-0 bg-white rounded-xl shadow-sm border border-[#e8eaf2] p-6 overflow-hidden">
-        <BpmnModelerComponent
-          key={bpmnXml} // Force re-render when XML changes
-          initialXml={bpmnXml}
-          onSave={handleSaveBpmn}
-        />
+        {bpmnXml && (
+          <BpmnModelerComponent
+            key={`${processId}-${bpmnXml.substring(0, 100)}`} // Force re-render when XML changes
+            initialXml={bpmnXml}
+            onSave={handleSaveBpmn}
+          />
+        )}
       </div>
     </div>
   );

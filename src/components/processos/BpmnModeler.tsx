@@ -21,11 +21,12 @@ export default function BpmnModelerComponent({ initialXml, onSave }: BpmnModeler
   const MAX_RETRIES = 10;
 
   const initModeler = useCallback(async () => {
-    if (initializedRef.current || !containerRef.current) {
+    if (!containerRef.current) {
       return;
     }
 
-    initializedRef.current = true;
+    // Reset initialization flag to allow re-initialization when XML changes
+    initializedRef.current = false;
     setIsLoading(true);
     setError(null);
     let modelerInstance: BpmnModelerType | null = null;
@@ -79,6 +80,21 @@ export default function BpmnModelerComponent({ initialXml, onSave }: BpmnModeler
   }, [initialXml]);
 
   useEffect(() => {
+    // Reset quando initialXml mudar
+    if (modelerRef.current) {
+      try {
+        const eventBus = modelerRef.current.get('eventBus') as any;
+        eventBus.off('commandStack.changed');
+        modelerRef.current.destroy();
+      } catch (e) {
+        console.warn('⚠️ Erro ao destruir modeler:', e);
+      }
+      modelerRef.current = null;
+    }
+    initializedRef.current = false;
+    retryCountRef.current = 0;
+    
+    // Inicializar com novo XML
     initModeler();
 
     return () => {
@@ -95,7 +111,7 @@ export default function BpmnModelerComponent({ initialXml, onSave }: BpmnModeler
       initializedRef.current = false;
       retryCountRef.current = 0;
     };
-  }, [initModeler]);
+  }, [initialXml, initModeler]);
 
   const handleSave = async () => {
     if (!modelerRef.current) return;
