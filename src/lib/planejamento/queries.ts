@@ -8,13 +8,20 @@ async function ensureAuth() {
   try {
     // Verificar se temos service key configurada
     if (!process.env.SUPABASE_SERVICE_ROLE_KEY && !process.env.SUPABASE_SERVICE_KEY) {
-      console.warn('⚠️ SUPABASE_SERVICE_ROLE_KEY não configurada!');
-      // Continuar mesmo sem auth para não quebrar em desenvolvimento
-    } else {
-      await authServiceUser();
+      const errorMsg = '❌ ERRO CRÍTICO: SUPABASE_SERVICE_ROLE_KEY não configurada!\n\n' +
+        'Configure as variáveis de ambiente na Vercel:\n' +
+        '1. Acesse https://vercel.com\n' +
+        '2. Vá em Settings > Environment Variables\n' +
+        '3. Adicione SUPABASE_SERVICE_ROLE_KEY\n' +
+        '4. Faça Redeploy\n\n' +
+        'Consulte: CONFIGURAR_VERCEL_ENV.md';
+      console.error(errorMsg);
+      throw new Error('Configuração do servidor incompleta. Entre em contato com o administrador.');
     }
+    await authServiceUser();
   } catch (error) {
-    console.warn('Erro na autenticação (continuando):', error);
+    console.error('❌ Erro na autenticação:', error);
+    throw error;
   }
 }
 

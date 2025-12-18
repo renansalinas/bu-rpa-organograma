@@ -6,9 +6,16 @@ import type { Process, CreateProcessPayload, UpdateProcessPayload } from './type
 
 async function ensureAuth() {
   try {
+    if (!process.env.SUPABASE_SERVICE_ROLE_KEY && !process.env.SUPABASE_SERVICE_KEY) {
+      const errorMsg = '❌ ERRO CRÍTICO: SUPABASE_SERVICE_ROLE_KEY não configurada!\n' +
+        'Configure as variáveis de ambiente na Vercel. Consulte: CONFIGURAR_VERCEL_ENV.md';
+      console.error(errorMsg);
+      throw new Error('Configuração do servidor incompleta. Entre em contato com o administrador.');
+    }
     await authServiceUser();
   } catch (error) {
-    console.warn('Erro na autenticação (continuando):', error);
+    console.error('❌ Erro na autenticação:', error);
+    throw error;
   }
 }
 
