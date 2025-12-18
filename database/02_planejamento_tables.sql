@@ -59,15 +59,22 @@ ALTER TABLE public.planning_documents ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.planning_lines ENABLE ROW LEVEL SECURITY;
 
 -- 6. Políticas de acesso (permissivo para service_role)
+
+-- Remover políticas antigas se existirem
+DROP POLICY IF EXISTS "Service role can do everything on planning_documents" ON public.planning_documents;
+DROP POLICY IF EXISTS "Service role can do everything on planning_lines" ON public.planning_lines;
+DROP POLICY IF EXISTS "Authenticated users can read planning_documents" ON public.planning_documents;
+DROP POLICY IF EXISTS "Authenticated users can read planning_lines" ON public.planning_lines;
+
 -- Service role tem acesso total
-CREATE POLICY IF NOT EXISTS "Service role can do everything on planning_documents"
+CREATE POLICY "Service role can do everything on planning_documents"
     ON public.planning_documents
     FOR ALL
     TO service_role
     USING (true)
     WITH CHECK (true);
 
-CREATE POLICY IF NOT EXISTS "Service role can do everything on planning_lines"
+CREATE POLICY "Service role can do everything on planning_lines"
     ON public.planning_lines
     FOR ALL
     TO service_role
@@ -75,19 +82,25 @@ CREATE POLICY IF NOT EXISTS "Service role can do everything on planning_lines"
     WITH CHECK (true);
 
 -- Usuários autenticados podem ler
-CREATE POLICY IF NOT EXISTS "Authenticated users can read planning_documents"
+CREATE POLICY "Authenticated users can read planning_documents"
     ON public.planning_documents
     FOR SELECT
     TO authenticated
     USING (true);
 
-CREATE POLICY IF NOT EXISTS "Authenticated users can read planning_lines"
+CREATE POLICY "Authenticated users can read planning_lines"
     ON public.planning_lines
     FOR SELECT
     TO authenticated
     USING (true);
 
 -- 7. Trigger para atualizar updated_at automaticamente
+
+-- Remover triggers antigos se existirem
+DROP TRIGGER IF EXISTS update_planning_documents_updated_at ON public.planning_documents;
+DROP TRIGGER IF EXISTS update_planning_lines_updated_at ON public.planning_lines;
+
+-- Criar função se não existir
 CREATE OR REPLACE FUNCTION public.update_updated_at_column()
 RETURNS TRIGGER AS $$
 BEGIN
@@ -96,6 +109,7 @@ BEGIN
 END;
 $$ LANGUAGE plpgsql;
 
+-- Criar triggers
 CREATE TRIGGER update_planning_documents_updated_at
     BEFORE UPDATE ON public.planning_documents
     FOR EACH ROW
