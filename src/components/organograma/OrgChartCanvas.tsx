@@ -12,9 +12,11 @@ import {
   type Edge,
   type NodeTypes,
 } from '@xyflow/react';
+
 import '@xyflow/react/dist/style.css';
 import dagre from 'dagre';
-import { OrgChartNode } from './OrgChartNode';
+
+import OrgChartNode from './OrgChartNode';
 import type { OrgChartNode as OrgChartNodeType, RFNodeData } from '@/lib/organograma/types';
 
 const nodeTypes: NodeTypes = {
@@ -32,7 +34,6 @@ interface OrgChartCanvasProps {
   onDeleteNode?: (nodeId: string) => void;
 }
 
-// Função para calcular layout usando dagre
 function calculateTreeLayout(
   dbNodes: OrgChartNodeType[],
   selectedNodeId: string | null = null
@@ -43,60 +44,50 @@ function calculateTreeLayout(
 
   const g = new dagre.graphlib.Graph();
   g.setDefaultEdgeLabel(() => ({}));
-  g.setGraph({ 
-    rankdir: 'TB', // Top to Bottom
+  g.setGraph({
+    rankdir: 'TB',
     nodesep: 100,
     ranksep: 150,
     marginx: 50,
     marginy: 50,
   });
 
-  // Adicionar nós ao grafo
   dbNodes.forEach((node) => {
-    g.setNode(node.id, { 
-      width: 200, 
-      height: 80 
+    g.setNode(node.id, {
+      width: 220,
+      height: 85,
     });
   });
 
-  // Adicionar arestas (hierarquia)
   dbNodes.forEach((node) => {
     if (node.parent_id) {
       g.setEdge(node.parent_id, node.id);
     }
   });
 
-  // Calcular layout
   dagre.layout(g);
 
-  // Criar nós do React Flow com posições calculadas
   const rfNodes: Node<RFNodeData>[] = [];
   const rfEdges: Edge[] = [];
 
   dbNodes.forEach((node) => {
     const dagreNode = g.node(node.id);
-    
+
     rfNodes.push({
       id: node.id,
       type: 'orgNode',
-      position: { 
-        x: dagreNode.x - 100, // Ajustar para centralizar
-        y: dagreNode.y - 40 
+      position: {
+        x: dagreNode.x - 110,
+        y: dagreNode.y - 45,
       },
       data: {
         personName: node.person_name,
         role: node.role,
-        nodeId: node.id,
-        parentId: node.parent_id,
-        onAddSubordinate: undefined, // Será preenchido pelo componente pai
-        onAddPeer: undefined,
-        onDelete: undefined,
       },
       selected: selectedNodeId === node.id,
-    } as Node<RFNodeData>);
+    });
   });
 
-  // Criar edges
   dbNodes.forEach((node) => {
     if (node.parent_id) {
       rfEdges.push({
@@ -131,42 +122,25 @@ function OrgChartCanvasInner({
   } | null>;
 }) {
   const { zoomIn, zoomOut, fitView } = useReactFlow();
-  
-  const { nodes: rfNodes, edges: rfEdges } = useMemo(
+
+  const { nodes, edges } = useMemo(
     () => calculateTreeLayout(dbNodes, selectedNodeId),
     [dbNodes, selectedNodeId]
   );
 
-  // Adicionar callbacks aos nós
-  const nodesWithCallbacks = useMemo(() => {
-    return rfNodes.map((node) => ({
-      ...node,
-      data: {
-        ...node.data,
-        onAddSubordinate,
-        onAddPeer,
-        onDelete: onDeleteNode,
-      },
-    }));
-  }, [rfNodes, onAddSubordinate, onAddPeer, onDeleteNode]);
-
-  // Expor controles de zoom via ref
   useEffect(() => {
     if (zoomControlsRef) {
       zoomControlsRef.current = {
         zoomIn: () => zoomIn(),
         zoomOut: () => zoomOut(),
         resetZoom: () => fitView({ padding: 0.2 }),
-        reorganize: () => {
-          // Reorganizar é feito automaticamente quando os nós mudam
-          fitView({ padding: 0.2 });
-        },
+        reorganize: () => fitView({ padding: 0.2 }),
       };
     }
-  }, [zoomIn, zoomOut, fitView, zoomControlsRef]);
+  }, [zoomControlsRef, zoomIn, zoomOut, fitView]);
 
   const onNodeClickHandler = useCallback(
-    (_event: React.MouseEvent, node: Node) => {
+    (_e: any, node: Node) => {
       onNodeClick?.(node.id);
     },
     [onNodeClick]
@@ -178,8 +152,8 @@ function OrgChartCanvasInner({
 
   return (
     <ReactFlow
-      nodes={nodesWithCallbacks}
-      edges={rfEdges}
+      nodes={nodes}
+      edges={edges}
       nodeTypes={nodeTypes}
       onNodeClick={onNodeClickHandler}
       onPaneClick={onPaneClick}
@@ -191,11 +165,7 @@ function OrgChartCanvasInner({
     >
       <Background color="#e8eaf2" gap={16} />
       <Controls />
-      <MiniMap
-        nodeColor="#2c19b2"
-        maskColor="rgba(0, 0, 0, 0.1)"
-        style={{ backgroundColor: '#f5f6fa' }}
-      />
+      <MiniMap nodeColor="#2c19b2" maskColor="rgba(0,0,0,0.2)" />
     </ReactFlow>
   );
 }
