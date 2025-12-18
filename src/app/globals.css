@@ -1,0 +1,73 @@
+@import "tailwindcss";
+
+:root {
+  --color-primary: #2c19b2;
+  --color-secondary: #20c6ed;
+  --color-neutral-0: #ffffff;
+  --color-neutral-10: #f5f6fa;
+  --color-neutral-20: #e8eaf2;
+  --color-neutral-30: #d4d7e8;
+  --color-neutral-40: #b8bdd4;
+  --color-neutral-50: #9ca2c0;
+  --color-neutral-60: #8087ac;
+  --color-neutral-70: #646c98;
+  --color-neutral-80: #485184;
+  --color-neutral-90: #2c3670;
+  --color-neutral-100: #1a1a1a;
+}
+
+@theme inline {
+  --color-primary: var(--color-primary);
+  --color-secondary: var(--color-secondary);
+  --color-neutral-0: var(--color-neutral-0);
+  --color-neutral-10: var(--color-neutral-10);
+  --color-neutral-20: var(--color-neutral-20);
+  --color-neutral-30: var(--color-neutral-30);
+  --color-neutral-40: var(--color-neutral-40);
+  --color-neutral-50: var(--color-neutral-50);
+  --color-neutral-60: var(--color-neutral-60);
+  --color-neutral-70: var(--color-neutral-70);
+  --color-neutral-80: var(--color-neutral-80);
+  --color-neutral-90: var(--color-neutral-90);
+  --color-neutral-100: var(--color-neutral-100);
+  --font-sans: var(--font-urbanist), system-ui, sans-serif;
+}
+
+body {
+  font-family: var(--font-urbanist), system-ui, sans-serif;
+  background: var(--color-neutral-10);
+  color: var(--color-neutral-100);
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+/* React Flow styles */
+.react-flow__node {
+  font-family: var(--font-urbanist), system-ui, sans-serif;
+}
+
+.react-flow__edge-path {
+  stroke: var(--color-neutral-30);
+  stroke-width: 2;
+}
+
+.react-flow__edge.selected .react-flow__edge-path {
+  stroke: var(--color-primary);
+}
+
+/* Componentes base */
+.btn-primary {
+  @apply bg-[#2c19b2] text-white px-4 py-2 rounded-lg text-sm font-medium hover:bg-[#230fb8] transition-colors;
+}
+
+.btn-secondary {
+  @apply bg-white text-[#646c98] border border-[#e8eaf2] px-4 py-2 rounded-lg text-sm font-medium hover:bg-[#f5f6fa] transition-colors;
+}
+
+.input-base {
+  @apply w-full px-3 py-2 border border-[#d4d7e8] rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-[#2c19b2] focus:border-transparent;
+}
+
+.card {
+  @apply bg-white rounded-xl shadow-sm border border-[#e8eaf2];
+}

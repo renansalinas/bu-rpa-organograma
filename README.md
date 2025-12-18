@@ -1,36 +1,196 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# BU RPA – Organograma
 
-## Getting Started
+Sistema web para gerenciamento de organogramas organizacionais.
 
-First, run the development server:
+## Stack Tecnológica
+
+- **Next.js 16** (App Router)
+- **Tailwind CSS 4**
+- **Radix UI** (primitives) + Tailwind para visual
+- **Supabase** (banco de dados + autenticação)
+- **React Flow** (@xyflow/react) para visualização do organograma
+
+## Estrutura do Projeto
+
+```
+src/
+  app/
+    (dashboard)/
+      layout.tsx              # Layout com sidebar + topbar
+      organograma/
+        page.tsx              # Lista de organogramas
+        novo/
+          page.tsx            # Criar novo organograma
+        [id]/
+          page.tsx            # Editor de organograma
+  components/
+    layout/
+      Sidebar.tsx
+      Topbar.tsx
+    organograma/
+      OrgChartTable.tsx       # Tabela de listagem
+      OrgChartEditor.tsx      # Wrapper do editor
+      OrgChartCanvas.tsx      # Canvas React Flow
+      OrgChartToolbar.tsx     # Toolbar de ações
+      OrgChartSidebar.tsx     # Painel de propriedades
+      OrgChartNode.tsx        # Componente de nó customizado
+  lib/
+    supabaseClient.ts         # Cliente Supabase
+    organograma/
+      queries.ts              # Funções CRUD
+      types.ts                # Tipos TypeScript
+    layout/
+      designTokens.ts         # Tokens de design
+```
+
+## Configuração
+
+### 1. Variáveis de Ambiente
+
+Crie um arquivo `.env.local` na raiz do projeto:
+
+```env
+NEXT_PUBLIC_SUPABASE_URL=sua_url_do_supabase
+NEXT_PUBLIC_SUPABASE_ANON_KEY=sua_chave_anon
+SUPABASE_SERVICE_KEY=sua_service_key
+```
+
+### 2. Banco de Dados (Supabase)
+
+Execute os seguintes SQLs no Supabase:
+
+```sql
+-- Tabela de organogramas
+create table org_charts (
+  id uuid primary key default gen_random_uuid(),
+  name text not null,
+  description text,
+  created_at timestamptz default now(),
+  updated_at timestamptz default now()
+);
+
+-- Tabela de nós (pessoas/cargos)
+create table org_chart_nodes (
+  id uuid primary key default gen_random_uuid(),
+  chart_id uuid not null references org_charts(id) on delete cascade,
+  parent_id uuid references org_chart_nodes(id) on delete cascade,
+  person_name text not null,
+  role text not null,
+  sort_order int default 0,
+  created_at timestamptz default now(),
+  updated_at timestamptz default now()
+);
+```
+
+### 3. Autenticação
+
+O sistema usa autenticação com usuário fixo (apenas para ambiente interno/MVP):
+
+- Email: `renansalinas@yanksolutions.com.br`
+- Senha: `admin123@yank`
+
+**⚠️ IMPORTANTE**: Esta autenticação é apenas para ambiente interno. Não usar em produção com credenciais expostas.
+
+## Instalação
+
+```bash
+npm install
+```
+
+## Desenvolvimento
 
 ```bash
 npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+Acesse [http://localhost:3000](http://localhost:3000)
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+## Funcionalidades
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+### Lista de Organogramas (`/organograma`)
 
-## Learn More
+- Visualização de todos os organogramas cadastrados
+- Informações: nome, quantidade de pessoas, última atualização
+- Ações: editar, excluir
+- Botão para criar novo organograma
 
-To learn more about Next.js, take a look at the following resources:
+### Editor de Organograma (`/organograma/novo` e `/organograma/[id]`)
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+- **Metadados**: Nome e descrição do organograma
+- **Canvas Interativo**: 
+  - Adicionar pessoas (raiz, subordinado, par)
+  - Editar propriedades (nome, cargo)
+  - Remover pessoas (com confirmação)
+  - Layout automático em árvore vertical
+  - Zoom in/out, reset zoom
+  - Reorganizar layout
+- **Painel Lateral**: Edição de propriedades do nó selecionado
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+## Design System
 
-## Deploy on Vercel
+### Cores
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
+- **Primary (Smart Blue)**: `#2c19b2`
+- **Secondary (Light Blue)**: `#20c6ed`
+- **Neutros**: `#ffffff` até `#1a1a1a`
 
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+### Tipografia
+
+- **Fonte**: Urbane (via Google Fonts - Urbanist como fallback)
+- **Tamanhos**: Seguindo escala do Tailwind
+
+### Componentes
+
+- Botões primários/secundários/ghost
+- Inputs e textareas com estados de focus
+- Tabelas com hover e estados ativos
+- Cards com bordas e sombras suaves
+- Modais de confirmação
+
+## Estrutura de Dados
+
+### OrgChart
+
+```typescript
+{
+  id: string;
+  name: string;
+  description?: string | null;
+  created_at: string;
+  updated_at: string;
+}
+```
+
+### OrgChartNode
+
+```typescript
+{
+  id: string;
+  chart_id: string;
+  parent_id: string | null;  // null = nó raiz
+  person_name: string;
+  role: string;
+  sort_order: number;
+  created_at: string;
+  updated_at: string;
+}
+```
+
+## Scripts Disponíveis
+
+- `npm run dev` - Inicia servidor de desenvolvimento
+- `npm run build` - Gera build de produção
+- `npm run start` - Inicia servidor de produção
+- `npm run lint` - Executa linter
+
+## Próximos Passos (Melhorias Futuras)
+
+- [ ] Auto-save periódico
+- [ ] Histórico de alterações
+- [ ] Exportação (PDF, PNG)
+- [ ] Importação de dados
+- [ ] Drag & drop para reorganizar manualmente
+- [ ] Busca e filtros na lista
+- [ ] Paginação na tabela
+- [ ] Autenticação real com Supabase Auth
+- [ ] Permissões e roles de usuário
