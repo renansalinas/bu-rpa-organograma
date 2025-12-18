@@ -114,17 +114,31 @@ export default function BpmnModelerComponent({ initialXml, onSave }: BpmnModeler
   }, [initialXml, initModeler]);
 
   const handleSave = async () => {
-    if (!modelerRef.current) return;
+    if (!modelerRef.current) {
+      console.error('❌ Modeler não está inicializado');
+      return;
+    }
 
     try {
+      console.log('💾 Exportando XML do BPMN...');
       const { xml } = await modelerRef.current.saveXML({ format: true });
+      
       if (xml) {
-        onSave(xml);
+        console.log('✅ XML exportado com sucesso:', {
+          length: xml.length,
+          preview: xml.substring(0, 200)
+        });
+        
+        await onSave(xml);
         setHasChanges(false);
+        console.log('✅ Callback onSave executado com sucesso');
+      } else {
+        console.error('❌ XML vazio retornado do modeler');
+        alert('Erro: Não foi possível exportar o diagrama BPMN');
       }
     } catch (err) {
-      console.error('Erro ao salvar BPMN:', err);
-      alert('Erro ao salvar diagrama BPMN');
+      console.error('❌ Erro ao salvar BPMN:', err);
+      alert('Erro ao salvar diagrama BPMN: ' + (err as Error).message);
     }
   };
 

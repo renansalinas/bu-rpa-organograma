@@ -51,20 +51,61 @@ export default function EditProcessPage() {
 
     setSaving(true);
     try {
+      console.log('🔄 Iniciando salvamento do BPMN...', {
+        processId,
+        xmlLength: xml.length,
+        timestamp: new Date().toISOString()
+      });
+
       const updated = await updateProcess({
         id: processId,
         name: name.trim(),
         description: description.trim() || undefined,
         bpmn_xml: xml
       });
-      // Atualizar estado com o XML retornado do servidor
-      setBpmnXml(updated.bpmn_xml);
+
+      console.log('✅ Processo atualizado com sucesso:', {
+        id: updated.id,
+        xmlLength: updated.bpmn_xml.length,
+        updatedAt: updated.updated_at
+      });
+
+      // Verificação de integridade: confirmar que o XML foi salvo corretamente
+      if (updated.bpmn_xml.length !== xml.length) {
+        console.warn('⚠️ Tamanho do XML retornado difere do enviado!', {
+          enviado: xml.length,
+          recebido: updated.bpmn_xml.length
+        });
+      }
+
+      // Verificação adicional: buscar o registro do banco para confirmar
+      console.log('🔍 Verificando persistência no banco...');
+      const verified = await getProcess(processId);
+      
+      if (verified && verified.bpmn_xml.length === xml.length) {
+        console.log('✅ Verificação confirmada: dados persistidos corretamente');
+      } else {
+        console.error('❌ AVISO: Verificação falhou! Dados podem não ter sido salvos corretamente');
+        throw new Error('Falha na verificação de persistência dos dados');
+      }
+
+      // Atualizar estado local com os dados confirmados do servidor
       setProcess(updated);
-      // Forçar reload da página para garantir que o BPMN recarregue
-      window.location.reload();
+      setName(updated.name);
+      setDescription(updated.description || '');
+      setBpmnXml(updated.bpmn_xml);
+
+      // Feedback visual de sucesso
+      alert('✅ Diagrama BPMN salvo e verificado com sucesso!');
+      
+      // Revalidar apenas o necessário sem reload completo
+      router.refresh();
+      
     } catch (error: any) {
-      console.error('Erro ao salvar processo:', error);
+      console.error('❌ Erro ao salvar processo:', error);
       alert(`Erro ao salvar processo: ${error.message || 'Erro desconhecido'}`);
+    } finally {
+      // Sempre resetar o estado de salvamento
       setSaving(false);
     }
   };
@@ -112,6 +153,17 @@ export default function EditProcessPage() {
 
   return (
     <div className="flex flex-col h-[calc(100vh-8rem)]">
+      {/* Loading Overlay durante salvamento */}
+      {saving && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+          <div className="bg-white rounded-lg p-6 shadow-xl flex flex-col items-center gap-4">
+            <div className="w-12 h-12 border-4 border-[#2c19b2] border-t-transparent rounded-full animate-spin"></div>
+            <div className="text-lg font-medium text-[#1a1a1a]">Salvando diagrama BPMN...</div>
+            <div className="text-sm text-[#646c98]">Aguarde enquanto verificamos a persistência dos dados</div>
+          </div>
+        </div>
+      )}
+
       {/* Header */}
       <div className="flex justify-between items-center mb-4">
         <div className="flex items-center gap-2 text-sm text-[#646c98]">
@@ -171,7 +223,7 @@ export default function EditProcessPage() {
       <div className="flex-1 min-h-0 bg-white rounded-xl shadow-sm border border-[#e8eaf2] p-6 overflow-hidden">
         {bpmnXml && (
           <BpmnModelerComponent
-            key={`${processId}-${bpmnXml.substring(0, 100)}`} // Force re-render when XML changes
+            key={processId} // Key estável - não força re-render desnecessário
             initialXml={bpmnXml}
             onSave={handleSaveBpmn}
           />

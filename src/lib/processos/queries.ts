@@ -87,7 +87,12 @@ export async function updateProcess(payload: UpdateProcessPayload): Promise<Proc
       updated_at: new Date().toISOString()
     };
     
-    console.log('Atualizando processo:', payload.id, 'XML length:', payload.bpmn_xml.length);
+    console.log('🔄 [SERVER] Iniciando atualização do processo:', {
+      processId: payload.id,
+      xmlLength: payload.bpmn_xml.length,
+      nameLength: payload.name.length,
+      timestamp: updateData.updated_at
+    });
     
     const { data, error } = await supabaseAdmin
       .from('processes')
@@ -97,20 +102,44 @@ export async function updateProcess(payload: UpdateProcessPayload): Promise<Proc
       .single();
     
     if (error) {
-      console.error('Erro Supabase ao atualizar processo:', error);
+      console.error('❌ [SERVER] Erro Supabase ao atualizar processo:', {
+        code: error.code,
+        message: error.message,
+        details: error.details,
+        hint: error.hint
+      });
       throw error;
     }
     
     if (!data) {
+      console.error('❌ [SERVER] Nenhum dado retornado após update');
       throw new Error('Processo não foi atualizado - nenhum dado retornado');
     }
     
-    console.log('Processo atualizado com sucesso:', data.id);
+    // Verificar se o XML foi realmente salvo
+    if (data.bpmn_xml.length !== payload.bpmn_xml.length) {
+      console.warn('⚠️ [SERVER] Tamanho do XML retornado difere do enviado:', {
+        enviado: payload.bpmn_xml.length,
+        retornado: data.bpmn_xml.length
+      });
+    }
+    
+    console.log('✅ [SERVER] Processo atualizado com sucesso:', {
+      id: data.id,
+      xmlLength: data.bpmn_xml.length,
+      updatedAt: data.updated_at
+    });
+    
+    // Revalidar cache do Next.js
     revalidatePath(`/processos/${payload.id}`);
     revalidatePath('/processos');
+    
+    // Pequeno delay para garantir que o banco commitou
+    await new Promise(resolve => setTimeout(resolve, 100));
+    
     return data;
   } catch (error: any) {
-    console.error('Erro ao atualizar processo:', error);
+    console.error('❌ [SERVER] Erro ao atualizar processo:', error);
     throw new Error(`Erro ao atualizar processo: ${error.message}`);
   }
 }
