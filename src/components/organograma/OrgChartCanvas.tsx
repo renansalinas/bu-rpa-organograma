@@ -84,6 +84,8 @@ function calculateTreeLayout(
       data: {
         personName: node.person_name,
         role: node.role,
+        nodeId: node.id,
+        parentId: node.parent_id,
       },
       selected: selectedNodeId === node.id,
     });
