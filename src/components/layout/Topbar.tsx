@@ -13,53 +13,25 @@ export function Topbar({ title }: TopbarProps) {
   const router = useRouter();
   const [isLoggingOut, setIsLoggingOut] = useState(false);
 
-  const handleLogout = async () => {
+  const handleLogout = () => {
     if (isLoggingOut) return; // Prevenir múltiplos cliques
     
     setIsLoggingOut(true);
+    console.log('🔓 Logout acionado - redirecionando IMEDIATAMENTE');
     
-    // Timeout de segurança: SEMPRE redireciona após 2 segundos
-    const safetyTimeout = setTimeout(() => {
-      console.log('⏰ Timeout de segurança ativado - redirecionando...');
-      window.location.href = '/login';
-    }, 2000);
-    
+    // Limpar storage de forma síncrona
     try {
-      console.log('🔓 Iniciando logout...');
-      
-      // Limpar storage IMEDIATAMENTE
-      try {
-        localStorage.clear();
-        sessionStorage.clear();
-        console.log('✅ Storage limpo');
-      } catch (e) {
-        console.warn('⚠️ Erro ao limpar storage:', e);
-      }
-      
-      // Tentar fazer logout no Supabase (não bloqueia se falhar)
-      try {
-        const supabase = createClient();
-        await Promise.race([
-          supabase.auth.signOut(),
-          new Promise((_, reject) => setTimeout(() => reject('timeout'), 1000))
-        ]);
-        console.log('✅ Logout Supabase OK');
-      } catch (e) {
-        console.warn('⚠️ Erro/timeout no signOut:', e);
-      }
-      
-      // Limpar timeout de segurança
-      clearTimeout(safetyTimeout);
-      
-      // Redirecionar IMEDIATAMENTE
-      console.log('🔄 Redirecionando para login...');
-      window.location.href = '/login';
-      
-    } catch (error) {
-      console.error('❌ Erro crítico:', error);
-      clearTimeout(safetyTimeout);
-      window.location.href = '/login';
+      localStorage.clear();
+      sessionStorage.clear();
+    } catch (e) {
+      console.warn('Erro ao limpar storage:', e);
     }
+    
+    // Fazer logout em background (não bloqueante)
+    createClient().auth.signOut().catch(e => console.warn('Erro no signOut:', e));
+    
+    // REDIRECIONAR IMEDIATAMENTE - Não espera nada!
+    window.location.href = '/login';
   };
 
   return (
